@@ -1,0 +1,30 @@
+master_db:
+  enabled: false
+  type: postgresql
+  connection_string: postgresql://postgres:postgres@localhost:5432/grepx_master
+  
+master_db_sqlite:
+  enabled: true
+  type: sqlite
+  connection_string: sqlite:///./data/master.db
+
+master_db_mongodb:
+  enabled: false
+  type: mongodb
+  connection_string: mongodb://localhost:27017/grepx_master
+
+server:
+  host: 0.0.0.0
+  port: 8000
+  debug: false
+  workers: 4
+
+connection_pools:
+  default_pool_size: 10
+  default_timeout: 30
+  read_pool_size: 20
+  write_pool_size: 10
+
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
