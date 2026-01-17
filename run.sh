@@ -3,7 +3,18 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# Go up 3 levels: grepx-database-server -> orchestrator -> grepx-database-server-orchastrator -> project root
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+
+# Convert Git Bash path to Windows path for compatibility
+# /c/Users/... -> C:/Users/...
+if [[ "$PROJECT_ROOT" == /[a-z]/* ]]; then
+    drive_letter="${PROJECT_ROOT:1:1}"
+    rest_of_path="${PROJECT_ROOT:2}"
+    PROJECT_ROOT="${drive_letter^^}:${rest_of_path}"
+fi
+
+export PROJECT_ROOT
 
 load_env() {
     if [ -f "$PROJECT_ROOT/env.common" ]; then
@@ -17,6 +28,11 @@ load_env() {
         set -a
         source "$SCRIPT_DIR/env.database-server"
         set +a
+    fi
+    
+    # Expand PROJECT_ROOT in GREPX_MASTER_DB_URL
+    if [[ "$GREPX_MASTER_DB_URL" == *'${PROJECT_ROOT}'* ]]; then
+        export GREPX_MASTER_DB_URL="${GREPX_MASTER_DB_URL//\$\{PROJECT_ROOT\}/$PROJECT_ROOT}"
     fi
 }
 
@@ -51,7 +67,6 @@ start_server() {
     echo "Starting $SERVER_NAME..."
     echo "  Host: ${SERVER_HOST:-0.0.0.0}"
     echo "  Port: ${SERVER_PORT:-8000}"
-    echo "  Master DB: ${MASTER_DB_TYPE:-postgresql}"
     activate_venv
     cd "$SCRIPT_DIR"
     
@@ -132,7 +147,6 @@ run_server() {
     echo "Running $SERVER_NAME in foreground..."
     echo "  Host: ${SERVER_HOST:-0.0.0.0}"
     echo "  Port: ${SERVER_PORT:-8000}"
-    echo "  Master DB: ${MASTER_DB_TYPE:-postgresql}"
     activate_venv
     cd "$SCRIPT_DIR"
     python src/main/main.py | tee "$LOG_DIR/${SERVER_NAME}_${DATE}.log"
